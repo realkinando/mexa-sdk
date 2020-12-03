@@ -37,6 +37,16 @@ const erc20ForwardRequestType = [
     {name:'dataHash',type:'bytes32'}
 ];
 
+function getFetchOptions(method, apiKey) {
+	return {
+		method: method,
+		headers: {
+			"x-api-key" : apiKey,
+			'Content-Type': 'application/json;charset=utf-8'
+		}
+	}
+}
+
 
 const getGasPrice = async() => {
     const response = await fetch("https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=P7JFS2YI6MNZFVY95FDMV45EGIX6F1BPAV");
@@ -67,8 +77,34 @@ class ERC20ForwarderClient{
     const feeManagerAddress = await feeProxy.feeManager();
     const forwarderAddress = await feeProxy.forwarder();
     //biconomy object will contain apiKey data
+
+    const dappAPIMap = {};
+    const getAPIInfoAPI = `${baseURL}/api/${config.version}/meta-api`;
+    fetch(getAPIInfoAPI, getFetchOptions('GET', BiconomyOptions.apiKey))
+    .then(response => response.json())
+    .then(function(response) {
+      if(response && response.listApis) {
+			  let apiList = response.listApis;
+			  for(let i=0;i<apiList.length;i++) {
+				  let contractAddress = apiList[i].contractAddress;
+					if(!dappAPIMap[contractAddress]) {
+            dappAPIMap[contractAddress] = {};
+					}
+					dappAPIMap[contractAddress][apiList[i].method] = apiList[i];
+			  }
+		}
+	}).catch(function(error) {
+      _logMessage(error);
+    });
+
+    const biconomy = {apiKey:BiconomyOptions.apiKey,dappAPIMap:dappAPIMap};
     //find out ApiKey information here if possible
     return new ERC20ForwarderHelper(biconomy,signer,signerAddress,feeProxyDomainData,oracleAggregatorAddress,feeManagerAddress,forwarderAddress,transferHandlerAddress);
+  }
+
+  async getApiId(req){
+    // get first 4 bytes from req data
+    // 
   }
 
   async getTokenGasPrice(tokenAddress){

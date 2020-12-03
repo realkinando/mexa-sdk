@@ -1509,4 +1509,4 @@ var scientificToDecimal = function (num) {
     return nsign < 0 ? '-'+num : num;
 };
 
-export default Biconomy;
+module.exports = Biconomy;
